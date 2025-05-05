@@ -19,7 +19,7 @@ classifiers = [
 ]
 dependencies = [
     "chardet>=5.0.0",
-    "watchdog>=6.0.0",
+    "watchdog>=4.0.0",
 ]
 
 [project.optional-dependencies]

@@ -190,6 +190,14 @@ class Watcher:
                     os.remove(dst_file)
                 except OSError as e:
                     self.logger.error(f"Error removing {dst_file}: {str(e)}")
+        elif prefix == "dst":
+            src_file = os.path.join(self.src_dir, rel_path)
+            if os.path.exists(src_file):
+                self.logger.info(f"Destination file deleted: {rel_path}, removing source file")
+                try:
+                    os.remove(src_file)
+                except OSError as e:
+                    self.logger.error(f"Error removing {src_file}: {str(e)}")
 
     def _process_changes(self) -> None:
         """

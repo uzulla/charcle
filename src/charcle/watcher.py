@@ -151,23 +151,28 @@ class Watcher:
         """
         dst_file = os.path.join(self.dst_dir, rel_path)
         src_file = os.path.join(self.src_dir, rel_path)
-        if not os.path.exists(src_file):
-            return
-        dst_mtime = os.path.getmtime(dst_file)
-        src_mtime = os.path.getmtime(src_file)
-        if dst_mtime > src_mtime:
-            self.logger.info(f"Destination file changed: {rel_path}, writing back")
-            reverse_converter = Converter(
-                from_encoding=self.converter.to_encoding,
-                to_encoding=self.converter.from_encoding or "utf-8",
-                max_size=None,  # 既に変換済みのファイルなのでサイズ制限は不要
-                exclude_patterns=self.converter.exclude_patterns,
-                verbose=self.converter.verbose,
-            )
-            try:
-                reverse_converter.convert_file(dst_file, src_file)
-            except Exception as e:
-                self.logger.error(f"Error writing back {rel_path}: {str(e)}")
+        src_dir = os.path.dirname(src_file)
+
+        if not os.path.exists(src_dir):
+            os.makedirs(src_dir)
+
+        if os.path.exists(src_file):
+            dst_mtime = os.path.getmtime(dst_file)
+            src_mtime = os.path.getmtime(src_file)
+            if dst_mtime <= src_mtime:
+                return
+        self.logger.info(f"Destination file changed: {rel_path}, writing back")
+        reverse_converter = Converter(
+            from_encoding=self.converter.to_encoding,
+            to_encoding=self.converter.from_encoding or "utf-8",
+            max_size=None,  # 既に変換済みのファイルなのでサイズ制限は不要
+            exclude_patterns=self.converter.exclude_patterns,
+            verbose=self.converter.verbose,
+        )
+        try:
+            reverse_converter.convert_file(dst_file, src_file)
+        except Exception as e:
+            self.logger.error(f"Error writing back {rel_path}: {str(e)}")
 
     def _handle_deleted_file(self, prefix: str, rel_path: str) -> None:
         """

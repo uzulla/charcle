@@ -7,7 +7,7 @@
 import logging
 import os
 import shutil
-from typing import List, Optional
+from typing import Optional
 
 from charcle.utils.encoding import convert_encoding, detect_encoding
 from charcle.utils.filesystem import (
@@ -29,7 +29,7 @@ class Converter:
         from_encoding: Optional[str] = None,
         to_encoding: str = "utf-8",
         max_size: Optional[str] = None,
-        exclude_patterns: Optional[List[str]] = None,
+        exclude_patterns: Optional[list[str]] = None,
         verbose: bool = False,
     ):
         """

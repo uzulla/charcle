@@ -10,7 +10,7 @@ import os
 import signal
 import threading
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from charcle.converter import Converter
 
@@ -42,7 +42,7 @@ class Watcher:
         self.interval = interval
         self.running = False
         self.thread: Optional[threading.Thread] = None
-        self.file_mtimes: Dict[str, float] = {}
+        self.file_mtimes: dict[str, float] = {}
         self.logger = logging.getLogger("charcle")
 
     def start(self) -> None:
@@ -100,7 +100,7 @@ class Watcher:
                 self.logger.error(f"Error in watch loop: {str(e)}")
                 time.sleep(self.interval)
 
-    def _scan_files(self, directory: str, mtimes: Dict[str, float], prefix: str) -> None:
+    def _scan_files(self, directory: str, mtimes: dict[str, float], prefix: str) -> None:
         """
         ディレクトリ内のファイルのmtimeをスキャンします。
 
@@ -190,7 +190,7 @@ class Watcher:
         """
         変更されたファイルを検出して処理します。
         """
-        current_mtimes: Dict[str, float] = {}
+        current_mtimes: dict[str, float] = {}
         self._scan_files(self.src_dir, current_mtimes, "src")
         self._scan_files(self.dst_dir, current_mtimes, "dst")
 

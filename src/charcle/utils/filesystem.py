@@ -9,7 +9,7 @@ import fnmatch
 import os
 import re
 import shutil
-from typing import List, Optional
+from typing import Optional
 
 
 def is_text_file(file_path: str, max_size: Optional[int] = None) -> bool:
@@ -75,7 +75,7 @@ def parse_size(size_str: str) -> int:
         return size
 
 
-def should_exclude(path: str, exclude_patterns: List[str]) -> bool:
+def should_exclude(path: str, exclude_patterns: list[str]) -> bool:
     """
     パスが除外パターンに一致するかどうかを判断します。
 

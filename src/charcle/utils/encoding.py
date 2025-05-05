@@ -5,18 +5,16 @@
 異なるエンコーディング間で変換するための機能を提供します。
 """
 
-from typing import Dict, List, Tuple
-
 import chardet
 
-SUPPORTED_ENCODINGS: List[str] = [
+SUPPORTED_ENCODINGS: list[str] = [
     "utf-8",
     "euc-jp",
     "shift-jis",  # Windows-31J
     "iso-2022-jp",  # JIS
 ]
 
-ENCODING_ALIASES: Dict[str, str] = {
+ENCODING_ALIASES: dict[str, str] = {
     "shift_jis": "shift-jis",
     "sjis": "shift-jis",
     "windows-31j": "shift-jis",
@@ -54,7 +52,7 @@ def is_supported_encoding(encoding: str) -> bool:
     return normalized in SUPPORTED_ENCODINGS
 
 
-def detect_encoding(content: bytes, fallback: str = "utf-8") -> Tuple[str, float]:
+def detect_encoding(content: bytes, fallback: str = "utf-8") -> tuple[str, float]:
     """
     バイナリコンテンツのエンコーディングを検出します。
 
@@ -68,7 +66,7 @@ def detect_encoding(content: bytes, fallback: str = "utf-8") -> Tuple[str, float
     if not content:
         return fallback, 1.0
 
-    result = chardet.detect(content)
+    result = chardet.detect(content) or {}
     encoding = result.get("encoding", fallback)
     confidence = result.get("confidence", 0.0)
 
@@ -85,7 +83,7 @@ def detect_encoding(content: bytes, fallback: str = "utf-8") -> Tuple[str, float
 
 def convert_encoding(
     content: bytes, from_encoding: str, to_encoding: str
-) -> Tuple[bytes, bool]:
+) -> tuple[bytes, bool]:
     """
     コンテンツのエンコーディングを変換します。
 
@@ -108,7 +106,7 @@ def convert_encoding(
         return content, False
 
 
-def get_supported_encodings() -> List[str]:
+def get_supported_encodings() -> list[str]:
     """
     サポートされているエンコーディングのリストを返します。
 

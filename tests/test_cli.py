@@ -86,3 +86,24 @@ class TestCLI(unittest.TestCase):
                     pass
             converter = mock_watcher.call_args[1]["converter"]
             self.assertEqual(converter.fallback_charset, "euc-jp")
+
+    @patch("sys.argv")
+    def test_watch_with_no_destination_directory(self, mock_argv: Any) -> None:
+        """
+        宛先ディレクトリが存在しない場合のwatchオプションのテスト
+        """
+        self.assertFalse(os.path.exists(self.dst_dir))
+        mock_argv.__getitem__.side_effect = lambda i: [
+            "charcle",
+            "--watch",
+            self.src_dir,
+            self.dst_dir
+        ][i]
+        with patch("charcle.cli.Watcher"):
+            with patch("time.sleep", side_effect=KeyboardInterrupt):
+                try:
+                    main()
+                except KeyboardInterrupt:
+                    pass
+            self.assertTrue(os.path.exists(self.dst_dir))
+            self.assertTrue(os.path.exists(os.path.join(self.dst_dir, "test.txt")))

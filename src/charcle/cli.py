@@ -132,7 +132,7 @@ def main() -> int:
             watcher.start()
 
             try:
-                while True:
+                while watcher.running:
                     time.sleep(1)
             except KeyboardInterrupt:
                 logger.info("Ctrl+C が押されました。終了します...")

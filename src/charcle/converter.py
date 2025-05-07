@@ -31,6 +31,7 @@ class Converter:
         max_size: Optional[str] = None,
         exclude_patterns: Optional[list[str]] = None,
         verbose: bool = False,
+        fallback_charset: Optional[str] = None,
     ):
         """
         コンバーターを初期化します。
@@ -41,12 +42,14 @@ class Converter:
             max_size: 変換する最大ファイルサイズ（例: "1M", "500K"）
             exclude_patterns: 除外するファイルパターンのリスト
             verbose: 詳細なログ出力を有効にするかどうか
+            fallback_charset: 新規ファイル作成時に使用するエンコーディング（Noneの場合は--toの値）
         """
         self.from_encoding = from_encoding
         self.to_encoding = to_encoding
         self.max_size_bytes = parse_size(max_size) if max_size else None
         self.exclude_patterns = exclude_patterns or []
         self.verbose = verbose
+        self.fallback_charset = fallback_charset
 
         self.logger = logging.getLogger("charcle")
         if not self.logger.handlers:

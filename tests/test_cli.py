@@ -65,3 +65,24 @@ class TestCLI(unittest.TestCase):
         exit_code = main()
         self.assertEqual(exit_code, 0)
         self.assertTrue(os.path.exists(os.path.join(self.dst_dir, "test.txt")))
+
+    @patch("sys.argv")
+    def test_fallback_charset_option(self, mock_argv: Any) -> None:
+        """
+        fallback_charsetオプションのテスト
+        """
+        mock_argv.__getitem__.side_effect = lambda i: [
+            "charcle",
+            "--fallback-charset=euc-jp",
+            "--watch",
+            self.src_dir,
+            self.dst_dir
+        ][i]
+        with patch("charcle.cli.Watcher") as mock_watcher:
+            with patch("time.sleep", side_effect=KeyboardInterrupt):
+                try:
+                    main()
+                except KeyboardInterrupt:
+                    pass
+            converter = mock_watcher.call_args[1]["converter"]
+            self.assertEqual(converter.fallback_charset, "euc-jp")

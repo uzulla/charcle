@@ -160,14 +160,14 @@ class Watcher:
         if not os.path.exists(src_dir):
             os.makedirs(src_dir)
 
+        to_encoding = self.converter.from_encoding
         if os.path.exists(src_file):
             dst_mtime = os.path.getmtime(dst_file)
             src_mtime = os.path.getmtime(src_file)
             if dst_mtime <= src_mtime:
                 return
 
-            to_encoding = self.converter.from_encoding
-            if os.path.exists(src_file) and os.path.isfile(src_file):
+            if os.path.isfile(src_file):
                 try:
                     with open(src_file, "rb") as f:
                         content = f.read()
@@ -180,6 +180,10 @@ class Watcher:
                         )
                 except Exception as e:
                     self.logger.warning(f"Error detecting source file encoding: {str(e)}")
+        else:
+            if self.converter.fallback_charset:
+                to_encoding = self.converter.fallback_charset
+                self.logger.info(f"Using fallback charset for new file: {to_encoding}")
 
         self.logger.info(f"Destination file changed: {rel_path}, writing back")
         reverse_converter = Converter(

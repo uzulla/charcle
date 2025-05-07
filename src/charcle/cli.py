@@ -72,6 +72,10 @@ def parse_args() -> argparse.Namespace:
         help="変更を監視し自動的に書き戻すデーモンモードで実行",
     )
     parser.add_argument(
+        "--fallback-charset",
+        help="新規ファイル作成時に使用するエンコーディング（省略時は--toの値を使用）",
+    )
+    parser.add_argument(
         "--watch-interval",
         type=float,
         default=1.0,
@@ -120,6 +124,7 @@ def main() -> int:
             max_size=args.max_size,
             exclude_patterns=exclude_patterns,
             verbose=args.verbose,
+            fallback_charset=args.fallback_charset,
         )
 
         if args.watch:

@@ -44,6 +44,7 @@ class Watcher:
         self.running = False
         self.thread: Optional[threading.Thread] = None
         self.file_mtimes: dict[str, float] = {}
+        self.fallback_files: set[str] = set()  # fallback_charsetで作成されたファイルを追跡
         self.logger = logging.getLogger("charcle")
 
     def start(self) -> None:
@@ -161,28 +162,44 @@ class Watcher:
             os.makedirs(src_dir)
 
         to_encoding = self.converter.from_encoding
+        
+        is_fallback_file = rel_path in self.fallback_files
+        
         if os.path.exists(src_file):
             dst_mtime = os.path.getmtime(dst_file)
             src_mtime = os.path.getmtime(src_file)
             if dst_mtime <= src_mtime:
                 return
 
-            if os.path.isfile(src_file):
+            if is_fallback_file and self.converter.fallback_charset:
+                to_encoding = self.converter.fallback_charset
+                self.logger.info(f"Using fallback charset for existing file: {to_encoding}")
+            elif os.path.isfile(src_file):
                 try:
                     with open(src_file, "rb") as f:
                         content = f.read()
-                    detected_encoding, confidence = detect_encoding(content)
-                    if confidence >= 0.7:
-                        to_encoding = detected_encoding
-                        self.logger.info(
-                            f"Detected source file encoding: {to_encoding} "
-                            f"(confidence: {confidence:.2f})"
-                        )
+                    
+                    is_ascii_only = all(b <= 127 for b in content)
+                    
+                    if is_ascii_only and is_fallback_file and self.converter.fallback_charset:
+                        to_encoding = self.converter.fallback_charset
+                        self.logger.info(f"File contains only ASCII, using fallback charset: {to_encoding}")
+                    else:
+                        detected_encoding, confidence = detect_encoding(content)
+                        if confidence >= 0.7:
+                            to_encoding = detected_encoding
+                            if is_fallback_file:
+                                self.fallback_files.remove(rel_path)
+                            self.logger.info(
+                                f"Detected source file encoding: {to_encoding} "
+                                f"(confidence: {confidence:.2f})"
+                            )
                 except Exception as e:
                     self.logger.warning(f"Error detecting source file encoding: {str(e)}")
         else:
             if self.converter.fallback_charset:
                 to_encoding = self.converter.fallback_charset
+                self.fallback_files.add(rel_path)
                 self.logger.info(f"Using fallback charset for new file: {to_encoding}")
 
         self.logger.info(f"Destination file changed: {rel_path}, writing back")

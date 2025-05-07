@@ -89,8 +89,14 @@ def should_exclude(path: str, exclude_patterns: list[str]) -> bool:
     if not exclude_patterns:
         return False
 
+    path_parts = path.split(os.sep)
     for pattern in exclude_patterns:
         if fnmatch.fnmatch(path, pattern):
+            return True
+        for part in path_parts:
+            if fnmatch.fnmatch(part, pattern):
+                return True
+        if os.path.basename(path) == pattern or pattern in path.split(os.sep):
             return True
     return False
 

@@ -128,6 +128,7 @@ def main() -> int:
         )
 
         if args.watch:
+            converter.convert_directory(args.input_dir, args.output_dir)
             watcher = Watcher(
                 src_dir=args.input_dir,
                 dst_dir=args.output_dir,

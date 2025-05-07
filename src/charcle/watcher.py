@@ -13,6 +13,7 @@ import time
 from typing import Any, Optional
 
 from charcle.converter import Converter
+from charcle.utils.encoding import detect_encoding
 
 
 class Watcher:
@@ -89,11 +90,14 @@ class Watcher:
         """
         監視ループ
         """
+        self.logger.info("Initial scan of files")
         self._scan_files(self.src_dir, self.file_mtimes, "src")
         self._scan_files(self.dst_dir, self.file_mtimes, "dst")
+        self.logger.debug(f"Initial files: {list(self.file_mtimes.keys())}")
 
         while self.running:
             try:
+                self.logger.debug("Processing changes...")
                 self._process_changes()
                 time.sleep(self.interval)
             except Exception as e:
@@ -161,10 +165,26 @@ class Watcher:
             src_mtime = os.path.getmtime(src_file)
             if dst_mtime <= src_mtime:
                 return
+
+            to_encoding = self.converter.from_encoding
+            if os.path.exists(src_file) and os.path.isfile(src_file):
+                try:
+                    with open(src_file, "rb") as f:
+                        content = f.read()
+                    detected_encoding, confidence = detect_encoding(content)
+                    if confidence >= 0.7:
+                        to_encoding = detected_encoding
+                        self.logger.info(
+                            f"Detected source file encoding: {to_encoding} "
+                            f"(confidence: {confidence:.2f})"
+                        )
+                except Exception as e:
+                    self.logger.warning(f"Error detecting source file encoding: {str(e)}")
+
         self.logger.info(f"Destination file changed: {rel_path}, writing back")
         reverse_converter = Converter(
             from_encoding=self.converter.to_encoding,
-            to_encoding=self.converter.from_encoding or "utf-8",
+            to_encoding=to_encoding or "utf-8",
             max_size=None,  # 既に変換済みのファイルなのでサイズ制限は不要
             exclude_patterns=self.converter.exclude_patterns,
             verbose=self.converter.verbose,
@@ -207,9 +227,22 @@ class Watcher:
         self._scan_files(self.src_dir, current_mtimes, "src")
         self._scan_files(self.dst_dir, current_mtimes, "dst")
 
+        self.logger.debug(f"Current files: {list(current_mtimes.keys())}")
+        self.logger.debug(f"Previous files: {list(self.file_mtimes.keys())}")
+
         for key, mtime in current_mtimes.items():
             prefix, rel_path = key.split(":", 1)
-            if key not in self.file_mtimes or mtime > self.file_mtimes[key]:
+            if key not in self.file_mtimes:
+                self.logger.debug(f"New file detected: {key}")
+                if prefix == "src":
+                    self._handle_source_change(rel_path)
+                elif prefix == "dst":
+                    self._handle_destination_change(rel_path)
+            elif mtime > self.file_mtimes[key]:
+                self.logger.debug(
+                    f"Modified file detected: {key}, "
+                    f"old mtime: {self.file_mtimes[key]}, new mtime: {mtime}"
+                )
                 if prefix == "src":
                     self._handle_source_change(rel_path)
                 elif prefix == "dst":

@@ -13,6 +13,7 @@ import time
 from typing import Any, Optional
 
 from charcle.converter import Converter
+from charcle.utils.encoding import detect_encoding
 
 
 class Watcher:
@@ -162,9 +163,28 @@ class Watcher:
             if dst_mtime <= src_mtime:
                 return
         self.logger.info(f"Destination file changed: {rel_path}, writing back")
+        target_encoding = self.converter.from_encoding or "utf-8"
+        if os.path.exists(src_file):
+            try:
+                with open(src_file, "rb") as f:
+                    src_content = f.read()
+                detected_encoding, confidence = detect_encoding(src_content)
+                if confidence > 0.7:
+                    target_encoding = detected_encoding
+                    self.logger.info(
+                        f"Detected source file encoding: {target_encoding} "
+                        f"(confidence: {confidence:.2f})"
+                    )
+                else:
+                    self.logger.warning(
+                        f"Low confidence ({confidence:.2f}) in source file encoding detection: "
+                        f"{detected_encoding}. Using fallback: {target_encoding}"
+                    )
+            except Exception as e:
+                self.logger.error(f"Error detecting source file encoding: {str(e)}")
         reverse_converter = Converter(
             from_encoding=self.converter.to_encoding,
-            to_encoding=self.converter.from_encoding or "utf-8",
+            to_encoding=target_encoding,
             max_size=None,  # 既に変換済みのファイルなのでサイズ制限は不要
             exclude_patterns=self.converter.exclude_patterns,
             verbose=self.converter.verbose,

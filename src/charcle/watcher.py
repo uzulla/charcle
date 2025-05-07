@@ -147,6 +147,57 @@ class Watcher:
         except Exception as e:
             self.logger.error(f"Error converting {rel_path}: {str(e)}")
 
+    def _determine_encoding(self, src_file: str, rel_path: str) -> Optional[str]:
+        """
+        ソースファイルのエンコーディングを決定します。
+
+        Args:
+            src_file: ソースファイルのパス
+            rel_path: ファイルの相対パス
+
+        Returns:
+            決定されたエンコーディング
+        """
+        to_encoding = self.converter.from_encoding
+        is_fallback_file = rel_path in self.fallback_files
+
+        if not os.path.exists(src_file):
+            if self.converter.fallback_charset:
+                to_encoding = self.converter.fallback_charset
+                self.fallback_files.add(rel_path)
+                self.logger.info(f"Using fallback charset for new file: {to_encoding}")
+            return to_encoding
+
+        if is_fallback_file and self.converter.fallback_charset:
+            to_encoding = self.converter.fallback_charset
+            self.logger.info(f"Using fallback charset for existing file: {to_encoding}")
+            return to_encoding
+
+        if os.path.isfile(src_file):
+            try:
+                with open(src_file, "rb") as f:
+                    content = f.read()
+                is_ascii_only = all(b <= 127 for b in content)
+                if is_ascii_only and is_fallback_file and self.converter.fallback_charset:
+                    to_encoding = self.converter.fallback_charset
+                    self.logger.info(
+                        f"File contains only ASCII, using fallback charset: {to_encoding}"
+                    )
+                else:
+                    detected_encoding, confidence = detect_encoding(content)
+                    if confidence >= 0.7:
+                        to_encoding = detected_encoding
+                        if is_fallback_file:
+                            self.fallback_files.remove(rel_path)
+                        self.logger.info(
+                            f"Detected source file encoding: {to_encoding} "
+                            f"(confidence: {confidence:.2f})"
+                        )
+            except Exception as e:
+                self.logger.warning(f"Error detecting source file encoding: {str(e)}")
+
+        return to_encoding
+
     def _handle_destination_change(self, rel_path: str) -> None:
         """
         宛先ファイルの変更を処理します。
@@ -158,49 +209,19 @@ class Watcher:
         src_file = os.path.join(self.src_dir, rel_path)
         src_dir = os.path.dirname(src_file)
 
+        if not os.path.exists(dst_file) or not os.path.isfile(dst_file):
+            return
+
         if not os.path.exists(src_dir):
             os.makedirs(src_dir)
 
-        to_encoding = self.converter.from_encoding
-        
-        is_fallback_file = rel_path in self.fallback_files
-        
         if os.path.exists(src_file):
             dst_mtime = os.path.getmtime(dst_file)
             src_mtime = os.path.getmtime(src_file)
             if dst_mtime <= src_mtime:
                 return
 
-            if is_fallback_file and self.converter.fallback_charset:
-                to_encoding = self.converter.fallback_charset
-                self.logger.info(f"Using fallback charset for existing file: {to_encoding}")
-            elif os.path.isfile(src_file):
-                try:
-                    with open(src_file, "rb") as f:
-                        content = f.read()
-                    
-                    is_ascii_only = all(b <= 127 for b in content)
-                    
-                    if is_ascii_only and is_fallback_file and self.converter.fallback_charset:
-                        to_encoding = self.converter.fallback_charset
-                        self.logger.info(f"File contains only ASCII, using fallback charset: {to_encoding}")
-                    else:
-                        detected_encoding, confidence = detect_encoding(content)
-                        if confidence >= 0.7:
-                            to_encoding = detected_encoding
-                            if is_fallback_file:
-                                self.fallback_files.remove(rel_path)
-                            self.logger.info(
-                                f"Detected source file encoding: {to_encoding} "
-                                f"(confidence: {confidence:.2f})"
-                            )
-                except Exception as e:
-                    self.logger.warning(f"Error detecting source file encoding: {str(e)}")
-        else:
-            if self.converter.fallback_charset:
-                to_encoding = self.converter.fallback_charset
-                self.fallback_files.add(rel_path)
-                self.logger.info(f"Using fallback charset for new file: {to_encoding}")
+        to_encoding = self._determine_encoding(src_file, rel_path)
 
         self.logger.info(f"Destination file changed: {rel_path}, writing back")
         reverse_converter = Converter(

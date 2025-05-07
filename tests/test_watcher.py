@@ -110,7 +110,7 @@ class TestWatcher(unittest.TestCase):
                 content.decode("utf-8", errors="strict")
         finally:
             watcher.stop()
-            
+
     def test_fallback_charset_maintained_for_ascii_content(self) -> None:
         """
         ASCII文字のみの場合でもfallback_charsetが維持されるかのテスト
@@ -120,35 +120,35 @@ class TestWatcher(unittest.TestCase):
         try:
             watcher.start()
             time.sleep(0.5)
-            
+
             dst_file = os.path.join(self.dst_dir, "ascii_file.txt")
             with open(dst_file, "w", encoding="utf-8") as f:
                 pass
-            
+
             time.sleep(2.0)
-            
+
             src_file = os.path.join(self.src_dir, "ascii_file.txt")
             self.assertTrue(os.path.exists(src_file))
-            
+
             with open(dst_file, "w", encoding="utf-8") as f:
                 f.write("Hello, world!")
-                
+
             time.sleep(2.0)
-            
+
             with open(src_file, "rb") as f:
                 content = f.read()
-                
+
             decoded_content = content.decode("euc-jp")
             self.assertEqual(decoded_content, "Hello, world!")
-            
+
             with open(dst_file, "w", encoding="utf-8") as f:
                 f.write("Hello, world! こんにちは")
-                
+
             time.sleep(2.0)
-            
+
             with open(src_file, "rb") as f:
                 content = f.read()
-                
+
             decoded_content = content.decode("euc-jp")
             self.assertEqual(decoded_content, "Hello, world! こんにちは")
         finally:

@@ -5,6 +5,7 @@ Converterモジュールのテスト
 import os
 import shutil
 import tempfile
+import time
 import unittest
 
 from charcle.converter import Converter
@@ -122,3 +123,31 @@ class TestConverter(unittest.TestCase):
         with open(dst_file, encoding="utf-8") as f:
             content = f.read()
         self.assertEqual(content, test_content)
+    def test_skip_unmodified_files(self) -> None:
+        """
+        変更されていないファイルがスキップされるかのテスト
+        """
+        test_content = "こんにちは、世界！"
+        test_file = os.path.join(self.src_dir, "test_skip.txt")
+        with open(test_file, "w", encoding="utf-8") as f:
+            f.write(test_content)
+
+        os.makedirs(self.dst_dir, exist_ok=True)
+
+        converter = Converter(from_encoding="utf-8", to_encoding="utf-8", verbose=True)
+        with self.assertLogs(level="INFO") as log:
+            converter.convert_file(test_file, os.path.join(self.dst_dir, "test_skip.txt"))
+            self.assertIn("Converted", log.output[0])
+
+        time.sleep(0.1)
+
+        with self.assertLogs(level="INFO") as log:
+            converter.convert_file(test_file, os.path.join(self.dst_dir, "test_skip.txt"))
+            self.assertIn("Skipped", log.output[0])
+
+        with open(test_file, "w", encoding="utf-8") as f:
+            f.write(test_content + " 更新されました！")
+
+        with self.assertLogs(level="INFO") as log:
+            converter.convert_file(test_file, os.path.join(self.dst_dir, "test_skip.txt"))
+            self.assertIn("Converted", log.output[0])

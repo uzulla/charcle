@@ -8,6 +8,15 @@ Charcleは、ファイルシステム上のテキストファイルの文字エ�
 - ファイル変更の監視と自動変換（デーモンモード）
 - シンボリックリンクの適切な処理
 - ファイルシステムメタデータ（権限、所有者、タイムスタンプ）の保持
+- 変更されていないファイルの自動スキップ機能（パフォーマンス向上）
+
+## サポートするエンコーディング
+
+- UTF-8
+- EUC-JP
+- Shift-JIS (Windows-31J)
+- JIS (ISO-2022-JP)
+- ASCII (ASCII文字のみのファイルは自動検出)
 
 ## インストール
 
@@ -41,7 +50,18 @@ charcle --watch --watch-interval=5 /path/to/source /path/to/destination
 
 # 詳細なログを出力
 charcle --verbose /path/to/source /path/to/destination
+
+# サポートされているエンコーディングの一覧を表示
+charcle --list
 ```
+
+### 除外パターンについて
+
+`--exclude`オプションは、カンマ区切りで複数のパターンを指定できます。パターンは以下のように動作します：
+
+- ディレクトリ名にマッチ: `--exclude=.git` で `.git` ディレクトリ以下のすべてのファイルが除外されます
+- ファイル名にマッチ: `--exclude=*.log` で拡張子が `.log` のすべてのファイルが除外されます
+- 複数パターン: `--exclude=.git,*.bak,*tmp` のように複数のパターンを指定できます
 
 ## 開発
 
@@ -51,6 +71,9 @@ charcle --verbose /path/to/source /path/to/destination
 # リポジトリのクローン
 git clone https://github.com/uzulla/charcle.git
 cd charcle
+
+# Python 3.9以上が必要です
+python --version
 
 # 開発用依存関係のインストール
 pip install -e ".[dev]"

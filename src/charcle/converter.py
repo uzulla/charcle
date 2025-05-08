@@ -112,6 +112,13 @@ class Converter:
             src_file: ソースファイルのパス
             dst_file: 宛先ファイルのパス
         """
+        if os.path.exists(dst_file) and os.path.isfile(dst_file) and os.path.isfile(src_file):
+            dst_mtime = os.path.getmtime(dst_file)
+            src_mtime = os.path.getmtime(src_file)
+            if dst_mtime >= src_mtime:
+                self.logger.info(f"Skipped {src_file} (not modified since last conversion)")
+                return
+
         if is_text_file(src_file, self.max_size_bytes):
             try:
                 with open(src_file, "rb") as f:

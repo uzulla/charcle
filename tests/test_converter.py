@@ -92,3 +92,33 @@ class TestConverter(unittest.TestCase):
         dst_file2 = os.path.join(self.dst_dir, "test2.bak")
         self.assertTrue(os.path.exists(dst_file1))
         self.assertFalse(os.path.exists(dst_file2))
+
+    def test_detect_ascii_file(self) -> None:
+        """
+        ASCII文字のみのファイルの検出と変換テスト
+        """
+        test_content = "Hello, world!"
+        test_file = os.path.join(self.src_dir, "test_ascii.txt")
+        with open(test_file, "w", encoding="utf-8") as f:
+            f.write(test_content)
+
+        converter = Converter(from_encoding=None, to_encoding="utf-8", verbose=True)
+
+        non_ascii_file = os.path.join(self.src_dir, "test_non_ascii.txt")
+        with open(non_ascii_file, "w", encoding="utf-8") as f:
+            f.write("こんにちは、世界！")
+
+        with self.assertLogs(level="INFO") as log:
+            converter.convert_directory(self.src_dir, self.dst_dir)
+
+            warning_logs = [r for r in log.records if r.levelname == "WARNING"]
+
+            # ASCII文字のみのファイルに関する警告がないことを確認
+            for record in warning_logs:
+                self.assertNotIn("test_ascii.txt", record.getMessage())
+
+        dst_file = os.path.join(self.dst_dir, "test_ascii.txt")
+        self.assertTrue(os.path.exists(dst_file))
+        with open(dst_file, encoding="utf-8") as f:
+            content = f.read()
+        self.assertEqual(content, test_content)

@@ -66,6 +66,10 @@ def detect_encoding(content: bytes, fallback: str = "utf-8") -> tuple[str, float
     if not content:
         return fallback, 1.0
 
+    is_ascii_only = all(b <= 127 for b in content)
+    if is_ascii_only:
+        return "ascii", 1.0
+
     result = chardet.detect(content) or {}
     encoding = result.get("encoding", fallback)
     confidence = result.get("confidence", 0.0)
@@ -97,6 +101,11 @@ def convert_encoding(
     """
     if from_encoding == to_encoding:
         return content, True
+
+    if from_encoding == "ascii":
+        from_encoding = "utf-8"  # ASCIIはUTF-8のサブセットとして扱う
+    if to_encoding == "ascii":
+        to_encoding = "utf-8"  # ASCIIへの変換はUTF-8への変換として扱う
 
     try:
         text = content.decode(from_encoding)

@@ -65,7 +65,11 @@ class TestWatcherExclude(unittest.TestCase):
         watcher = Watcher(self.src_dir, self.dst_dir, converter, interval=0.1)
         try:
             watcher.start()
-            time.sleep(1.0)  # 初期スキャンを待つ
+            start_time = time.time()
+            while not watcher.is_scan_complete():
+                if time.time() - start_time > 5.0:  # 5秒後にタイムアウト
+                    self.fail("ウォッチャーの初期スキャンが時間内に完了しませんでした")
+                time.sleep(0.1)  # 100msごとにポーリング
 
             dst_exclude_file = os.path.join(self.dst_dir, "exclude.log")
             self.assertFalse(os.path.exists(dst_exclude_file))

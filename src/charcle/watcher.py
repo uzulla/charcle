@@ -47,6 +47,7 @@ class Watcher:
         self.file_mtimes: dict[str, float] = {}
         self.fallback_files: set[str] = set()  # fallback_charsetで作成されたファイルを追跡
         self.logger = logging.getLogger("charcle")
+        self._initial_scan_complete = False
 
     def start(self) -> None:
         """
@@ -77,6 +78,15 @@ class Watcher:
             self.thread.join()
         self.logger.info("Watching stopped")
 
+    def is_scan_complete(self) -> bool:
+        """
+        初期スキャンが完了したかどうかを返します。
+
+        Returns:
+            初期スキャンが完了した場合はTrue、そうでない場合はFalse
+        """
+        return self._initial_scan_complete
+
     def _signal_handler(self, signum: int, frame: Any) -> None:
         """
         シグナルハンドラ
@@ -96,6 +106,7 @@ class Watcher:
         self._scan_files(self.src_dir, self.file_mtimes, "src")
         self._scan_files(self.dst_dir, self.file_mtimes, "dst")
         self.logger.debug(f"Initial files: {list(self.file_mtimes.keys())}")
+        self._initial_scan_complete = True
 
         while self.running:
             try:
@@ -109,7 +120,7 @@ class Watcher:
     def _scan_files(self, directory: str, mtimes: dict[str, float], prefix: str) -> None:
         """
         ディレクトリ内のファイルのmtimeをスキャンします。
-        
+
         除外パターンに一致するディレクトリとファイルは処理から除外されます。
         ディレクトリの除外は、そのディレクトリ自体のパスが除外パターンに一致する場合に行われ、
         その場合はそのディレクトリ以下のすべてのファイルとサブディレクトリが処理から除外されます。

@@ -14,6 +14,7 @@ from typing import Any, Optional
 
 from charcle.converter import Converter
 from charcle.utils.encoding import detect_encoding
+from charcle.utils.filesystem import should_exclude
 
 
 class Watcher:
@@ -118,12 +119,19 @@ class Watcher:
             return
 
         for root, _, files in os.walk(directory):
+            rel_dir = os.path.relpath(root, directory)
+            if rel_dir != "." and should_exclude(rel_dir, self.converter.exclude_patterns):
+                continue
+
             for file in files:
                 file_path = os.path.join(root, file)
                 if os.path.islink(file_path):
                     continue  # シンボリックリンクはスキップ
                 try:
                     rel_path = os.path.relpath(file_path, directory)
+                    if should_exclude(rel_path, self.converter.exclude_patterns):
+                        self.logger.debug(f"Skipping excluded file: {rel_path}")
+                        continue
                     key = f"{prefix}:{rel_path}"
                     mtimes[key] = os.path.getmtime(file_path)
                 except OSError:

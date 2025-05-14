@@ -14,6 +14,7 @@ from typing import Any, Optional
 
 from charcle.converter import Converter
 from charcle.utils.encoding import detect_encoding
+from charcle.utils.filesystem import should_exclude
 
 
 class Watcher:
@@ -46,6 +47,7 @@ class Watcher:
         self.file_mtimes: dict[str, float] = {}
         self.fallback_files: set[str] = set()  # fallback_charsetで作成されたファイルを追跡
         self.logger = logging.getLogger("charcle")
+        self._initial_scan_complete = False
 
     def start(self) -> None:
         """
@@ -76,6 +78,15 @@ class Watcher:
             self.thread.join()
         self.logger.info("Watching stopped")
 
+    def is_scan_complete(self) -> bool:
+        """
+        初期スキャンが完了したかどうかを返します。
+
+        Returns:
+            初期スキャンが完了した場合はTrue、そうでない場合はFalse
+        """
+        return self._initial_scan_complete
+
     def _signal_handler(self, signum: int, frame: Any) -> None:
         """
         シグナルハンドラ
@@ -95,6 +106,7 @@ class Watcher:
         self._scan_files(self.src_dir, self.file_mtimes, "src")
         self._scan_files(self.dst_dir, self.file_mtimes, "dst")
         self.logger.debug(f"Initial files: {list(self.file_mtimes.keys())}")
+        self._initial_scan_complete = True
 
         while self.running:
             try:
@@ -109,6 +121,12 @@ class Watcher:
         """
         ディレクトリ内のファイルのmtimeをスキャンします。
 
+        除外パターンに一致するディレクトリとファイルは処理から除外されます。
+        ディレクトリの除外は、そのディレクトリ自体のパスが除外パターンに一致する場合に行われ、
+        その場合はそのディレクトリ以下のすべてのファイルとサブディレクトリが処理から除外されます。
+        これにより、大規模なディレクトリ（例：.git）が除外パターンに一致する場合、
+        そのディレクトリ内のファイルを個別に確認する必要がなくなり、パフォーマンスが向上します。
+
         Args:
             directory: スキャンするディレクトリのパス
             mtimes: mtime情報を格納する辞書
@@ -118,12 +136,19 @@ class Watcher:
             return
 
         for root, _, files in os.walk(directory):
+            rel_dir = os.path.relpath(root, directory)
+            if rel_dir != "." and should_exclude(rel_dir, self.converter.exclude_patterns):
+                continue
+
             for file in files:
                 file_path = os.path.join(root, file)
                 if os.path.islink(file_path):
                     continue  # シンボリックリンクはスキップ
                 try:
                     rel_path = os.path.relpath(file_path, directory)
+                    if should_exclude(rel_path, self.converter.exclude_patterns):
+                        self.logger.debug(f"Skipping excluded file: {rel_path}")
+                        continue
                     key = f"{prefix}:{rel_path}"
                     mtimes[key] = os.path.getmtime(file_path)
                 except OSError:

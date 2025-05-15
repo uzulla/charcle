@@ -153,3 +153,27 @@ class TestWatcher(unittest.TestCase):
             self.assertEqual(decoded_content, "Hello, world! こんにちは")
         finally:
             watcher.stop()
+    def test_ignore_temporary_editor_files(self) -> None:
+        """
+        一時的なエディタファイル（.swpなど）が適切に無視されるかのテスト
+        """
+        converter = Converter(to_encoding="utf-8")
+        watcher = Watcher(self.src_dir, self.dst_dir, converter, interval=0.1)
+        try:
+            watcher.start()
+            time.sleep(0.5)
+            swp_file = os.path.join(self.src_dir, ".test.txt.swp")
+            with open(swp_file, "w") as f:
+                f.write("temporary content")
+            normal_file = os.path.join(self.src_dir, "test.txt")
+            with open(normal_file, "w") as f:
+                f.write("normal content")
+            time.sleep(2.0)
+            dst_swp_file = os.path.join(self.dst_dir, ".test.txt.swp")
+            self.assertFalse(os.path.exists(dst_swp_file),
+                             "Temporary .swp file should not be copied to destination")
+            dst_normal_file = os.path.join(self.dst_dir, "test.txt")
+            self.assertTrue(os.path.exists(dst_normal_file),
+                           "Normal file should be copied to destination")
+        finally:
+            watcher.stop()

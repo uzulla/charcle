@@ -22,6 +22,27 @@ class Watcher:
     ファイル変更監視クラス
     """
 
+    @staticmethod
+    def _is_temp_editor_file(filename: str) -> bool:
+        """
+        一時的なエディタファイルかどうかをチェックします。
+
+        Args:
+            filename: チェックするファイル名
+
+        Returns:
+            一時的なエディタファイルの場合はTrue、そうでない場合はFalse
+        """
+        if filename.endswith('.swp') or filename.endswith('.swo'):
+            return True
+        if filename.startswith('#') and filename.endswith('#'):
+            return True
+        if filename.endswith('~'):
+            return True
+        if filename.startswith('.') and filename.endswith('.tmp'):
+            return True
+        return False
+
     def __init__(
         self,
         src_dir: str,
@@ -144,6 +165,9 @@ class Watcher:
                 file_path = os.path.join(root, file)
                 if os.path.islink(file_path):
                     continue  # シンボリックリンクはスキップ
+                if self._is_temp_editor_file(file):
+                    self.logger.debug(f"Skipping temporary editor file: {file}")
+                    continue  # 一時的なエディタファイルはスキップ
                 try:
                     rel_path = os.path.relpath(file_path, directory)
                     if should_exclude(rel_path, self.converter.exclude_patterns):
@@ -269,6 +293,11 @@ class Watcher:
             prefix: ファイルのプレフィックス（"src"または"dst"）
             rel_path: 削除されたファイルの相対パス
         """
+        # 一時的なエディタファイルはスキップ
+        if self._is_temp_editor_file(os.path.basename(rel_path)):
+            self.logger.info(f"Skipping temporary editor file: {rel_path}")
+            return
+
         if prefix == "src":
             dst_file = os.path.join(self.dst_dir, rel_path)
             if os.path.exists(dst_file):

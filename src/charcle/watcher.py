@@ -254,6 +254,11 @@ class Watcher:
         Args:
             rel_path: 変更されたファイルの相対パス
         """
+        # 除外パターンに一致するファイルはスキップ
+        if should_exclude(rel_path, self.converter.exclude_patterns):
+            self.logger.debug(f"Skipping excluded destination file: {rel_path}")
+            return
+
         dst_file = os.path.join(self.dst_dir, rel_path)
         src_file = os.path.join(self.src_dir, rel_path)
         src_dir = os.path.dirname(src_file)

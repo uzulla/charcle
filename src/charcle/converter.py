@@ -7,7 +7,6 @@
 import logging
 import os
 import shutil
-from typing import Optional
 
 from charcle.utils.encoding import convert_encoding, detect_encoding
 from charcle.utils.filesystem import (
@@ -26,12 +25,12 @@ class Converter:
 
     def __init__(
         self,
-        from_encoding: Optional[str] = None,
+        from_encoding: str | None = None,
         to_encoding: str = "utf-8",
-        max_size: Optional[str] = None,
-        exclude_patterns: Optional[list[str]] = None,
+        max_size: str | None = None,
+        exclude_patterns: list[str] | None = None,
         verbose: bool = False,
-        fallback_charset: Optional[str] = None,
+        fallback_charset: str | None = None,
     ):
         """
         コンバーターを初期化します。

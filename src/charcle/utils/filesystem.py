@@ -9,10 +9,9 @@ import fnmatch
 import os
 import re
 import shutil
-from typing import Optional
 
 
-def is_text_file(file_path: str, max_size: Optional[int] = None) -> bool:
+def is_text_file(file_path: str, max_size: int | None = None) -> bool:
     """
     ファイルがテキストファイルかどうかを判断します。
 

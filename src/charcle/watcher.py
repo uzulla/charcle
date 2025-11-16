@@ -10,7 +10,7 @@ import os
 import signal
 import threading
 import time
-from typing import Any, Optional
+from typing import Any
 
 from charcle.converter import Converter
 from charcle.utils.encoding import detect_encoding
@@ -64,7 +64,7 @@ class Watcher:
         self.converter = converter
         self.interval = interval
         self.running = False
-        self.thread: Optional[threading.Thread] = None
+        self.thread: threading.Thread | None = None
         self.file_mtimes: dict[str, float] = {}
         self.fallback_files: set[str] = set()  # fallback_charsetで作成されたファイルを追跡
         self.logger = logging.getLogger("charcle")
@@ -196,7 +196,7 @@ class Watcher:
         except Exception as e:
             self.logger.error(f"Error converting {rel_path}: {str(e)}")
 
-    def _determine_encoding(self, src_file: str, rel_path: str) -> Optional[str]:
+    def _determine_encoding(self, src_file: str, rel_path: str) -> str | None:
         """
         ソースファイルのエンコーディングを決定します。
 

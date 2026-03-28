@@ -234,14 +234,20 @@ class Watcher:
                     )
                 else:
                     detected_encoding, confidence = detect_encoding(content)
-                    if confidence >= 0.7:
+                    if confidence > 0.0:
                         to_encoding = detected_encoding
-                        if is_fallback_file:
-                            self.fallback_files.remove(rel_path)
-                        self.logger.info(
-                            f"Detected source file encoding: {to_encoding} "
-                            f"(confidence: {confidence:.2f})"
-                        )
+                        if confidence >= 0.7:
+                            if is_fallback_file:
+                                self.fallback_files.remove(rel_path)
+                            self.logger.info(
+                                f"Detected source file encoding: {to_encoding} "
+                                f"(confidence: {confidence:.2f})"
+                            )
+                        else:
+                            self.logger.warning(
+                                f"Low confidence ({confidence:.2f}) in source encoding "
+                                f"detection for {src_file}: {to_encoding}"
+                            )
             except Exception as e:
                 self.logger.warning(f"Error detecting source file encoding: {str(e)}")
 

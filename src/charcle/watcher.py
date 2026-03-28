@@ -245,7 +245,7 @@ class Watcher:
                         else:
                             self.logger.warning(
                                 f"Low confidence ({confidence:.2f}) in source encoding "
-                                f"detection for {src_file}: {to_encoding}"
+                                f"detection for {rel_path}: {to_encoding}"
                             )
             except Exception as e:
                 self.logger.warning(f"Error detecting source file encoding: {str(e)}")

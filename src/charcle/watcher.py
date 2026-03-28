@@ -220,7 +220,6 @@ class Watcher:
         if is_fallback_file and self.converter.fallback_charset:
             to_encoding = self.converter.fallback_charset
             self.logger.info(f"Using fallback charset for existing file: {to_encoding}")
-            return to_encoding
 
         if os.path.isfile(src_file):
             try:
@@ -238,7 +237,7 @@ class Watcher:
                         to_encoding = detected_encoding
                         if confidence >= 0.7:
                             if is_fallback_file:
-                                self.fallback_files.remove(rel_path)
+                                self.fallback_files.discard(rel_path)
                             self.logger.info(
                                 f"Detected source file encoding: {to_encoding} "
                                 f"(confidence: {confidence:.2f})"
